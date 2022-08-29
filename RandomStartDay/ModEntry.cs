@@ -128,17 +128,18 @@ namespace RandomStartDay
                             this.Monitor.Log("array \"allowedSeasons\" contains invalid value(s). Valid values are: \"spring\", \"summer\", \"fall\", \"winter\". This mod did NOT work.", LogLevel.Error);
                             introEnd = true;
                             return;
-                    }
                         
+                        }
+                        
+                    }
                 }
-            }
         }
 
         private void randomize (Random random)
         {
             dayOfMonth = random.Next(config.MaxOfDayOfMonth) + 1;
             currentSeason = config.allowedSeasons[random.Next(config.allowedSeasons.Length)];
-                }
+        }
 
         private void apply()
         {
@@ -152,12 +153,6 @@ namespace RandomStartDay
                 // this is initial objects, so call seasonal method
                 location.seasonUpdate(currentSeason);
                 }
-                int dom = random.Next(config.MaxOfDayOfMonth) + 1;
-                string cs = config.allowedSeasons[random.Next(config.allowedSeasons.Length)];
-
-                // apply
-                Game1.dayOfMonth = dom;
-                Game1.currentSeason = cs;
                 // make sure outside not dark, for Dynamic Night Time
                 Game1.timeOfDay = 1200;
             }
