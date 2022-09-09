@@ -18,6 +18,7 @@ using StardewValley.Network;
 using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using xTile;
+using xTile.Dimensions;
 using xTile.Tiles;
 
 namespace RandomStartDay
@@ -26,12 +27,14 @@ namespace RandomStartDay
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
+        private IModHelper helper;
         private ModConfig config;
 
         private int dayOfMonth;
         private String currentSeason = "spring";
 
         private bool introEnd = true; // for asset replacing
+        private IAssetName originalSpringTileName;
 
         public override void Entry(IModHelper helper)
         {
@@ -39,19 +42,28 @@ namespace RandomStartDay
             helper.Events.GameLoop.GameLaunched += this.GameLoop_GameLaunched;
             helper.Events.Specialized.LoadStageChanged += this.Specialized_LoadStageChanged;
             helper.Events.Content.AssetRequested += this.Content_AssetRequested;
-
+            helper.Events.GameLoop.DayStarted += GameLoop_DayStarted;
         }
 
         private void GameLoop_GameLaunched(object sender, GameLaunchedEventArgs e)
         {
             introEnd = true;
+            verification();
+            // if unique id is used, other random options are disabled
+            if (config.isRandomSeedUsed)
+            {
+                config.allowedSeasons = new String[] { "spring", "summer", "fall", "winter" };
+                config.avoidFestivalDay = false;
+            }
         }
 
         private void Specialized_LoadStageChanged(object sender, LoadStageChangedEventArgs e)
         {
+            Monitor.Log("e.NewStage = " + e.NewStage.ToString(), LogLevel.Debug);
+
             if (e.NewStage == LoadStage.CreatedBasicInfo)
             {
-                verification();
+                Monitor.Log(config.allowedSeasons.ToString() + " / " + config.avoidFestivalDay, LogLevel.Debug);
                 // make introEnd to false because asset is loaded before createdInitialLocations
                 introEnd = false;
                 // for prevent tilesheet to be fixed to spring
@@ -73,22 +85,20 @@ namespace RandomStartDay
                 apply();
                 problemFix();
             }
+        }
 
-            // Once the save file has been created, make the asset is no longer replaced.
-            if (e.NewStage == LoadStage.CreatedSaveFile)
+        private void GameLoop_DayStarted(object sender, DayStartedEventArgs e)
+        {
+            // GameLoop.SaveCreated not worked so I use DayStarted I don't know why
+            if (introEnd == false)
             {
+                Helper.GameContent.InvalidateCache(originalSpringTileName);
                 introEnd = true;
-                // spring_outdoorsTileSheet invalidation
-                Helper.GameContent.InvalidateCache("Maps/spring_outdoorsTileSheet");
             }
-
         }
 
         private void Content_AssetRequested(object sender, AssetRequestedEventArgs e)
         {
-            // excute only introEnd is false
-            if (introEnd != false)
-                return;
 
             if (!config.useSeasonalTilesetInBusScene)
                 return;
@@ -99,15 +109,18 @@ namespace RandomStartDay
                 e.LoadFromModFile<Texture2D>("assets/" + currentSeason + "Intro.png", AssetLoadPriority.Low);
             }
             */
-            // outdoortiles, fixed on spring to seasonal
+            // outdoortiles, fixed on spring to seasonal, when introEnd is false
             if (e.NameWithoutLocale.IsEquivalentTo("Maps/spring_outdoorsTileSheet"))
             {
+                if (introEnd == false)
                 // load asset from game folder
-                e.LoadFromModFile<Texture2D>("../../Content/Maps/" + currentSeason + "_outdoorsTileSheet.xnb", AssetLoadPriority.Low);
+                {
+                    originalSpringTileName = e.Name;
+                    e.LoadFromModFile<Texture2D>("../../Content/Maps/" + currentSeason + "_outdoorsTileSheet.xnb", AssetLoadPriority.Low);
+                }
             }
         }
 
-        //
         private void verification()
             {
             // if allowed seasons have invalid value (other than spring, summer, fall, winter)
@@ -137,25 +150,31 @@ namespace RandomStartDay
 
         private void randomize (Random random)
         {
-            dayOfMonth = random.Next(config.MaxOfDayOfMonth) + 1;
-            currentSeason = config.allowedSeasons[random.Next(config.allowedSeasons.Length)];
+            do
+            {
+                dayOfMonth = random.Next(28) + 1;
+                currentSeason = config.allowedSeasons[random.Next(config.allowedSeasons.Length)];
+                // if next day is festival day, randomize one more time
+                if (!Utility.isFestivalDay(dayOfMonth + 1, currentSeason))
+                    break;
+                random = new Random();
+            } while (true);
         }
 
         private void apply()
         {
-            
             Game1.dayOfMonth = dayOfMonth;
             Game1.currentSeason = currentSeason;
 
             // refresh all locations
             foreach (GameLocation location in (IEnumerable<GameLocation>)Game1.locations)
                 {
-                // this is initial objects, so call seasonal method
-                location.seasonUpdate(currentSeason);
+                    // this is initial objects, so call seasonal method
+                    location.seasonUpdate(currentSeason);
                 }
-                // make sure outside not dark, for Dynamic Night Time
-                Game1.timeOfDay = 1200;
-            }
+            // make sure outside not dark, for Dynamic Night Time
+            Game1.timeOfDay = 1200;
+        }
 
         private void problemFix()
         {
@@ -169,6 +188,7 @@ namespace RandomStartDay
 
         private void test________()
         {
+            Monitor.Log("Test Method called!!!!!!", LogLevel.Warn);
             //method for test
         }
     }
