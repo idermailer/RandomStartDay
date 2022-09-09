@@ -27,13 +27,13 @@ namespace RandomStartDay
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
-        private IModHelper helper;
         private ModConfig config;
 
         private int dayOfMonth;
         private String currentSeason = "spring";
 
         private bool introEnd = true; // for asset replacing
+        private bool winter28 = false;
         private IAssetName originalSpringTileName;
 
         public override void Entry(IModHelper helper)
@@ -42,12 +42,14 @@ namespace RandomStartDay
             helper.Events.GameLoop.GameLaunched += this.GameLoop_GameLaunched;
             helper.Events.Specialized.LoadStageChanged += this.Specialized_LoadStageChanged;
             helper.Events.Content.AssetRequested += this.Content_AssetRequested;
-            helper.Events.GameLoop.DayStarted += GameLoop_DayStarted;
+            helper.Events.GameLoop.Saving += this.GameLoop_Saving;
+            helper.Events.GameLoop.DayStarted += this.GameLoop_DayStarted;
         }
 
         private void GameLoop_GameLaunched(object sender, GameLaunchedEventArgs e)
         {
             introEnd = true;
+            winter28 = false;
             verification();
             // if unique id is used, other random options are disabled
             if (config.isRandomSeedUsed)
@@ -59,11 +61,8 @@ namespace RandomStartDay
 
         private void Specialized_LoadStageChanged(object sender, LoadStageChangedEventArgs e)
         {
-            Monitor.Log("e.NewStage = " + e.NewStage.ToString(), LogLevel.Debug);
-
             if (e.NewStage == LoadStage.CreatedBasicInfo)
             {
-                Monitor.Log(config.allowedSeasons.ToString() + " / " + config.avoidFestivalDay, LogLevel.Debug);
                 // make introEnd to false because asset is loaded before createdInitialLocations
                 introEnd = false;
                 // for prevent tilesheet to be fixed to spring
@@ -77,13 +76,32 @@ namespace RandomStartDay
                     Random random = new();
                     randomize(random);
                 }
+
+                // check if the date is winter 28th
+                if (currentSeason == "winter" && dayOfMonth == 28)
+                {
+                    winter28 = true;
+                }
+                else
+                {
+                    winter28 = false;
+                }
             }
 
             // Main method
             if (e.NewStage == LoadStage.CreatedInitialLocations) // new game
             {
                 apply();
-                problemFix();
+            }
+        }
+
+        private void GameLoop_Saving(object sender, SavingEventArgs e)
+        {
+            // if player moves on winter 28th(=starts on spring 1), return to year 1
+            if (winter28)
+            {
+                Game1.year = 1;
+                winter28 = false;
             }
         }
 
@@ -93,7 +111,14 @@ namespace RandomStartDay
             if (introEnd == false)
             {
                 Helper.GameContent.InvalidateCache(originalSpringTileName);
-                introEnd = true;
+            }
+            introEnd = true;
+
+            // problem fix: first day, clear mailbox and add willy's mail to tomorrow's mail
+            if (Game1.stats.daysPlayed == 1)
+            {
+                Game1.mailbox.Clear();
+                Game1.addMailForTomorrow("spring_2_1");
             }
         }
 
@@ -176,20 +201,11 @@ namespace RandomStartDay
             Game1.timeOfDay = 1200;
         }
 
-        private void problemFix()
-        {
-            // FIX: if player arrived after year1 spring 1st, assume that willy's first mail has been received.
-            // so player can see event getting fishig rod, and enter willy's shop
-            if (!(currentSeason == "spring" && dayOfMonth == 1))
-            {
-                Game1.MasterPlayer.mailReceived.Add("spring_2_1");
-            }
-        }
-
         private void test________()
         {
             Monitor.Log("Test Method called!!!!!!", LogLevel.Warn);
             //method for test
+            dayOfMonth = 28;
         }
     }
 }
