@@ -13,6 +13,7 @@ class ModConfig
 
 
     public bool useSeasonalTilesetInBusScene { get; set; }
+    public bool useWinter28toYear1 { get; set; }
     public ModConfig()
     {
         this.isRandomSeedUsed = true;
@@ -20,5 +21,6 @@ class ModConfig
         this.avoidFestivalDay = false;
 
         this.useSeasonalTilesetInBusScene = true;
+        this.useWinter28toYear1 = true;
     }
 }

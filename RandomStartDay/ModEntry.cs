@@ -1,29 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Reflection.Emit;
-using System.Threading;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.Minigames;
-using StardewValley.Monsters;
-using StardewValley.Network;
-using StardewValley.Objects;
-using StardewValley.TerrainFeatures;
-using xTile;
-using xTile.Dimensions;
-using xTile.Tiles;
 
 namespace RandomStartDay
 {
-    
+
     /// <summary>The mod entry point.</summary>
     public class ModEntry : Mod
     {
@@ -33,19 +18,21 @@ namespace RandomStartDay
         private String currentSeason = "spring";
 
         private bool introEnd = true; // for asset replacing
-        private bool winter28 = false;
+        public bool winter28 = false;
         private IAssetName originalSpringTileName;
 
         public override void Entry(IModHelper helper)
         {
             this.config = this.Helper.ReadConfig<ModConfig>();
+
             helper.Events.GameLoop.GameLaunched += this.GameLoop_GameLaunched;
             helper.Events.Specialized.LoadStageChanged += this.Specialized_LoadStageChanged;
             helper.Events.Content.AssetRequested += this.Content_AssetRequested;
-            helper.Events.GameLoop.Saving += this.GameLoop_Saving;
+            helper.Events.GameLoop.DayEnding += this.GameLoop_DayEnding;
             helper.Events.GameLoop.DayStarted += this.GameLoop_DayStarted;
         }
 
+        // EVENTS
         private void GameLoop_GameLaunched(object sender, GameLaunchedEventArgs e)
         {
             introEnd = true;
@@ -54,8 +41,13 @@ namespace RandomStartDay
             // if unique id is used, other random options are disabled
             if (config.isRandomSeedUsed)
             {
+                Monitor.Log("Your Game's unique ID will be used. The other randomize options are disabled.", LogLevel.Debug);
                 config.allowedSeasons = new String[] { "spring", "summer", "fall", "winter" };
                 config.avoidFestivalDay = false;
+            }
+            else
+            {
+                Monitor.Log("Default random seed will be used.", LogLevel.Debug);
             }
         }
 
@@ -77,8 +69,8 @@ namespace RandomStartDay
                     randomize(random);
                 }
 
-                // check if the date is winter 28th
-                if (currentSeason == "winter" && dayOfMonth == 28)
+                // check if the date is winter 28th, if the option is used
+                if (currentSeason == "winter" && dayOfMonth == 28 && config.useWinter28toYear1)
                 {
                     winter28 = true;
                 }
@@ -95,12 +87,12 @@ namespace RandomStartDay
             }
         }
 
-        private void GameLoop_Saving(object sender, SavingEventArgs e)
+        private void GameLoop_DayEnding(object sender, DayEndingEventArgs e)
         {
             // if player moves on winter 28th(=starts on spring 1), return to year 1
             if (winter28)
             {
-                Game1.year = 1;
+                --Game1.year;
                 winter28 = false;
             }
         }
@@ -146,6 +138,7 @@ namespace RandomStartDay
             }
         }
 
+        // METHODS
         private void verification()
             {
             // if allowed seasons have invalid value (other than spring, summer, fall, winter)
@@ -166,7 +159,6 @@ namespace RandomStartDay
                             this.Monitor.Log("array \"allowedSeasons\" contains invalid value(s). Valid values are: \"spring\", \"summer\", \"fall\", \"winter\". This mod did NOT work.", LogLevel.Error);
                             introEnd = true;
                             return;
-                        
                         }
                         
                     }
