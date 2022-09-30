@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Events;
 using StardewValley;
+using System;
+using System.Collections.Generic;
 
 namespace RandomStartDay
 {
@@ -44,6 +45,7 @@ namespace RandomStartDay
                 Monitor.Log("Your Game's unique ID will be used. The other randomize options are disabled.", LogLevel.Debug);
                 config.allowedSeasons = new String[] { "spring", "summer", "fall", "winter" };
                 config.avoidFestivalDay = false;
+                config.alwaysStartAt1st = false;
             }
             else
             {
@@ -69,6 +71,12 @@ namespace RandomStartDay
                     randomize(random);
                 }
 
+                if (config.alwaysStartAt1st)
+                {
+                    // set day to 28th, because to make next day to 1st day
+                    dayOfMonth = 28;
+                }
+
                 // check if the date is winter 28th, if the option is used
                 if (currentSeason == "winter" && dayOfMonth == 28 && config.useWinter28toYear1)
                 {
@@ -80,8 +88,7 @@ namespace RandomStartDay
                 }
             }
 
-            // Main method
-            if (e.NewStage == LoadStage.CreatedInitialLocations) // new game
+            if (e.NewStage == LoadStage.CreatedInitialLocations)
             {
                 apply();
             }
@@ -116,16 +123,18 @@ namespace RandomStartDay
 
         private void Content_AssetRequested(object sender, AssetRequestedEventArgs e)
         {
-
-            if (!config.useSeasonalTilesetInBusScene)
-                return;
-
-            /*  ★ minigames/currentseason_intro 이미지 만들 것
             if (e.NameWithoutLocale.IsEquivalentTo("Minigames/Intro"))
             {
-                e.LoadFromModFile<Texture2D>("assets/" + currentSeason + "Intro.png", AssetLoadPriority.Low);
+                e.Edit(asset =>
+                {
+                    var editor = asset.AsImage();
+                    Texture2D sourceImage = this.Helper.ModContent.Load<Texture2D>("assets/intro_" + currentSeason + ".png");
+
+                    editor.PatchImage(sourceImage, targetArea: (new Rectangle(0, 176, 48, 80)), sourceArea: (new Rectangle(0, 0, 48, 80)));
+                    editor.PatchImage(sourceImage, targetArea: (new Rectangle(48, 224, 64, 16)), sourceArea: (new Rectangle(48, 48, 64, 16)));
+                });
             }
-            */
+
             // outdoortiles, fixed on spring to seasonal, when introEnd is false
             if (e.NameWithoutLocale.IsEquivalentTo("Maps/spring_outdoorsTileSheet"))
             {
@@ -140,32 +149,32 @@ namespace RandomStartDay
 
         // METHODS
         private void verification()
-            {
+        {
             // if allowed seasons have invalid value (other than spring, summer, fall, winter)
-                for (int i = 0; i < config.allowedSeasons.Length; i++)
+            for (int i = 0; i < config.allowedSeasons.Length; i++)
+            {
+                switch (config.allowedSeasons[i])
                 {
-                    switch (config.allowedSeasons[i])
-                    {
-                        case "spring":
-                            break;
-                        case "summer":
-                            break;
-                        case "fall":
-                            break;
-                        case "winter":
-                            break;
-                        default:
+                    case "spring":
+                        break;
+                    case "summer":
+                        break;
+                    case "fall":
+                        break;
+                    case "winter":
+                        break;
+                    default:
                         {
                             this.Monitor.Log("array \"allowedSeasons\" contains invalid value(s). Valid values are: \"spring\", \"summer\", \"fall\", \"winter\". This mod did NOT work.", LogLevel.Error);
                             introEnd = true;
                             return;
                         }
-                        
-                    }
+
                 }
+            }
         }
 
-        private void randomize (Random random)
+        private void randomize(Random random)
         {
             do
             {
@@ -185,10 +194,10 @@ namespace RandomStartDay
 
             // refresh all locations
             foreach (GameLocation location in (IEnumerable<GameLocation>)Game1.locations)
-                {
-                    // this is initial objects, so call seasonal method
-                    location.seasonUpdate(currentSeason);
-                }
+            {
+                // this is initial objects, so call seasonal method
+                location.seasonUpdate(currentSeason);
+            }
             // make sure outside not dark, for Dynamic Night Time
             Game1.timeOfDay = 1200;
         }
