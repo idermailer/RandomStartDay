@@ -12,6 +12,7 @@ class ModConfig
     public bool avoidFestivalDay { get; set; }
     public bool alwaysStartAt1st { get; set; }
 
+    public bool useSeasonalSeeds { get; set; }
     public bool useWinter28toYear1 { get; set; }
 
     public ModConfig()
@@ -21,6 +22,7 @@ class ModConfig
         this.avoidFestivalDay = false;
         this.alwaysStartAt1st = false;
 
+        this.useSeasonalSeeds = true;
         this.useWinter28toYear1 = true;
     }
 }

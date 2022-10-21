@@ -1,7 +1,7 @@
 {
   "Name": "Random Start Day",
   "Author": "idermailer",
-  "Version": "1.6.0",
+  "Version": "1.8.0",
   "Description": "Moving day is not fixed anymore",
   "UniqueID": "idermailer.RandomStartDay",
   "EntryDll": "RandomStartDay.dll",
