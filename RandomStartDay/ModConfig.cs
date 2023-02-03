@@ -5,6 +5,8 @@ using System.Threading;
 
 class ModConfig
 {
+    public bool disableAll { get; set; }
+
     public bool isRandomSeedUsed { get; set; }
 
     // reset other randomize options only when isRandomSeedUsed is TRUE
@@ -17,6 +19,7 @@ class ModConfig
 
     public ModConfig()
     {
+        this.disableAll = false;
         this.isRandomSeedUsed = true;
         this.allowedSeasons = new string[] { "spring", "summer", "fall", "winter" };
         this.avoidFestivalDay = false;
