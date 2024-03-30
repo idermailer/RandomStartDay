@@ -385,6 +385,7 @@ namespace RandomStartDay
         public static void Harmony_SetDateForIntro()
         {
             // RANDOMIZING
+            Game1.startingGameSeed ??= new ulong?();
             Randomize(Game1.UseLegacyRandom);
         }
 
