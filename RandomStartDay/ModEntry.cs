@@ -78,7 +78,7 @@ namespace RandomStartDay
                     );
             }
             helper.ConsoleCommands.Add("rsd_set_date", "Change date without changing number of days played. SMAPI console commands do with that.\n" +
-                    "Usage: rsd_setDay [-d <day>] [-s <season>] [-y <year>] [-nv]\n-nv: No validation for day of month and year. This may cause errors.", SetDate);
+                    "Usage: rsd_set_date [-d <day>] [-s <season>] [-y <year>] [-nv]\n-nv: No validation for day of month and year. This may cause errors.", SetDate);
             helper.ConsoleCommands.Add("days_played", "Print number of days played on cosole.", PrintDaysPlayed);
         }
 
@@ -189,7 +189,8 @@ namespace RandomStartDay
             int y = 1;
             if (args.Length == 0 || (args.Length == 1 && args[0] == "-nv"))
             {
-                monitor.Log("This command requires at least one of the following arguments: day, season, or year.", LogLevel.Info);
+                monitor.Log("This command requires at least one of the following arguments: day, season, or year.\n" +
+                    "If you're not sure what to input, try typing \"help rsd_set_date\" into the console.", LogLevel.Info);
                 return;
             }
 
