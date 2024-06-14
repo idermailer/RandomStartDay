@@ -22,19 +22,30 @@ namespace RandomStartDay
 
         internal static void SendTodaysMails()
         {
-            // problem fix: first day, clear mailbox and add willy's mail to tomorrow's mail
-            if (Game1.stats.DaysPlayed == 1)
+            // problem fix: first day, when randomizing is not disabled, clear mailbox and add willy's mail to tomorrow's mail
+            if (Game1.stats.DaysPlayed == 1 && !ModEntry.config.DisableAll)
             {
                 Game1.mailbox.Clear();
                 Game1.addMailForTomorrow("spring_2_1");
+
+                // allow to receive greenraingus mail even if you are not in year 1
+                if (Game1.isGreenRain && !Game1.player.hasOrWillReceiveMail("GreenRainGus"))
+                    Game1.mailbox.Add("GreenRainGus");
+
+                // replace last year's mail to this year's mail
+                ThisYearsMailToLastYearsMail();
+
+                // little compatibility support for Serfdom
+                if (ModEntry.modHelper.ModRegistry.IsLoaded("DaLion.Taxes"))
+                {
+                    Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>("Data/mail");
+                    if (mailData == null) { return; }
+                    if (mailData.ContainsKey("DaLion.Taxes/FrsIntro"))
+                        Game1.mailbox.Add("DaLion.Taxes/FrsIntro");
+                    if (mailData.ContainsKey("DaLion.Taxes/LewisIntro"))
+                        Game1.mailbox.Add("DaLion.Taxes/LewisIntro");
+                }
             }
-
-            // allow to receive greenraingus mail even if you are not in year 1
-            if (Game1.isGreenRain && !Game1.player.hasOrWillReceiveMail("GreenRainGus"))
-                Game1.mailbox.Add("GreenRainGus");
-
-            // replace last year's mail to this year's mail
-            ThisYearsMailToLastYearsMail();
         }
 
         private static void ThisYearsMailToLastYearsMail()
@@ -44,8 +55,7 @@ namespace RandomStartDay
             int d = today.Day;
             int y = today.Year;
 
-            string dataPath = Path.Combine(new string[] { "Data", "mail" });
-            Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>(dataPath);
+            Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>("Data/mail");
 
             // When an email that should be received last year exists and not received yet
             string lastYearMailName = s + "_" + d + "_" + (y - 1);
@@ -64,7 +74,7 @@ namespace RandomStartDay
         internal static void Harmony_ChangeTodaysTip(ref string __result)
         {
             string resultString;
-            Dictionary<string, string> tips = DataLoader.Tv_TipChannel(Game1.content);
+            Dictionary<string, string> tips = Game1.content.Load<Dictionary<string, string>>("Data/TV/TipChannel");
             int todayNumber = Game1.Date.TotalDays + 1;
             if (tips.ContainsKey(todayNumber.ToString()))
             {
@@ -72,8 +82,7 @@ namespace RandomStartDay
             }
             else
             {
-                string stringPath = Path.Combine(new string[] { "Strings", "StringsFromCSFiles" });
-                Dictionary<string, string> CSStrings = Game1.temporaryContent.Load<Dictionary<string, string>>(stringPath);
+                Dictionary<string, string> CSStrings = Game1.content.Load<Dictionary<string, string>>("Strings/StringsFromCSFiles");
                 CSStrings.TryGetValue("TV.cs.13148", out resultString);
             }
 
@@ -92,13 +101,13 @@ namespace RandomStartDay
             if (Game1.shortDayNameFromDayOfSeason(Game1.dayOfMonth) != "Sun")
                 return;
 
-            Dictionary<string, string> cookingData = DataLoader.Tv_CookingChannel(Game1.content);
+            Dictionary<string, string> cookingData = Game1.content.Load<Dictionary<string, string>>("Data/TV/CookingChannel");
             int todayNumber = Game1.Date.TotalDays + 1;
 
             int recipeNum = todayNumber % 224 / 7;
             if (todayNumber % 224 == 0)
                 recipeNum = 32;
-            MethodInfo m = AccessTools.Method(typeof(StardewValley.Objects.TV), "getWeeklyRecipe", new Type[] { typeof(Dictionary<string, string>), typeof(System.String) });
+            MethodInfo m = AccessTools.Method(typeof(StardewValley.Objects.TV), "getWeeklyRecipe", new Type[] { typeof(Dictionary<string, string>), typeof(string) });
             try
             {
                 __result = (string[])m.Invoke(__instance, new object[] { cookingData, recipeNum.ToString() });
