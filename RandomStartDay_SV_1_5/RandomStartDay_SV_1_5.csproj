@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <EnableHarmony>true</EnableHarmony>
+    <GamePath>D:\SteamLibrary\content\Stardew Valley\SV 1.5</GamePath>
+    <GameModsPath>D:\SteamLibrary\content\Stardew Valley\SV 1.5\Mods</GameModsPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.0.1" />
+  </ItemGroup>
+  
+</Project>
