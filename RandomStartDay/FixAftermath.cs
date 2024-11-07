@@ -3,7 +3,7 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace RandomStartDay
@@ -22,30 +22,11 @@ namespace RandomStartDay
 
         internal static void SendTodaysMails()
         {
-            // problem fix: first day, when randomizing is not disabled, clear mailbox and add willy's mail to tomorrow's mail
-            if (Game1.stats.DaysPlayed == 1 && !ModEntry.config.DisableAll)
-            {
-                Game1.mailbox.Clear();
-                Game1.addMailForTomorrow("spring_2_1");
+            // replace last year's mail to this year's mail
+            ThisYearsMailToLastYearsMail();
 
-                // allow to receive greenraingus mail even if you are not in year 1
-                if (Game1.isGreenRain && !Game1.player.hasOrWillReceiveMail("GreenRainGus"))
-                    Game1.mailbox.Add("GreenRainGus");
-
-                // replace last year's mail to this year's mail
-                ThisYearsMailToLastYearsMail();
-
-                // little compatibility support for Serfdom
-                if (ModEntry.modHelper.ModRegistry.IsLoaded("DaLion.Taxes"))
-                {
-                    Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>("Data/mail");
-                    if (mailData == null) { return; }
-                    if (mailData.ContainsKey("DaLion.Taxes/FrsIntro"))
-                        Game1.mailbox.Add("DaLion.Taxes/FrsIntro");
-                    if (mailData.ContainsKey("DaLion.Taxes/LewisIntro"))
-                        Game1.mailbox.Add("DaLion.Taxes/LewisIntro");
-                }
-            }
+            // little compatibility support for Serfdom
+            Compatibility_Serfdom(ModEntry.modHelper.ModRegistry.IsLoaded("DaLion.Taxes"));
         }
 
         private static void ThisYearsMailToLastYearsMail()
@@ -54,7 +35,6 @@ namespace RandomStartDay
             string s = today.SeasonKey.ToLower();
             int d = today.Day;
             int y = today.Year;
-
             Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>("Data/mail");
 
             // When an email that should be received last year exists and not received yet
@@ -118,6 +98,18 @@ namespace RandomStartDay
             }
         }
 
+        private static void Compatibility_Serfdom(bool installed)
+        {
+            // https://www.nexusmods.com/stardewvalley/mods/24357
+            if (!installed)
+                return;
 
+            Dictionary<string, string> mailData = Game1.content.Load<Dictionary<string, string>>("Data/mail");
+            if (mailData == null) { return; }
+            if (mailData.ContainsKey("DaLion.Taxes/FrsIntro"))
+                Game1.player.mailbox.Add("DaLion.Taxes/FrsIntro");
+            if (mailData.ContainsKey("DaLion.Taxes/LewisIntro"))
+                Game1.player.mailbox.Add("DaLion.Taxes/LewisIntro");
+        }
     }
 }
